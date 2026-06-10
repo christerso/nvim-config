@@ -346,6 +346,9 @@ return {
         "tsx",
         "jsdoc",
         "toml",
+        -- Schema formats (Emacs equivalents live in lisp/lang-formats.el)
+        "proto",
+        "capnp",
         -- Fullstack-React web grammars (json/json5 also come via the lang.json
         -- extra; listed here so they're guaranteed even if that extra changes).
         "css",
