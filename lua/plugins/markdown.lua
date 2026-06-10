@@ -93,6 +93,7 @@ return {
         "<leader>mr",
         "<cmd>RenderMarkdown toggle<cr>",
         desc = "Toggle Markdown Render",
+        ft = "markdown", -- buffer-local: don't shadow the global build/run <leader>mr
       },
     },
   },

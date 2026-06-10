@@ -31,22 +31,21 @@ return {
           keys = {
             { "<leader>cR", "<cmd>ClangdSwitchSourceHeader<cr>", desc = "Switch Source/Header (C/C++)" },
           },
-          root_dir = function(fname)
-            if not fname or type(fname) ~= "string" or fname == "" then
-              return nil
-            end
-            local util = require("lspconfig.util")
-            return util.root_pattern(
+          -- New vim.lsp.config signature: (bufnr, on_dir) — must CALL on_dir(path),
+          -- not return it. The old function(fname) form silently failed to attach.
+          root_dir = function(bufnr, on_dir)
+            local fname = vim.api.nvim_buf_get_name(bufnr)
+            local root = vim.fs.root(fname, {
+              "compile_commands.json",
+              "compile_flags.txt",
               "Makefile",
               "configure.ac",
-              "configure.in",
-              "config.h.in",
               "meson.build",
-              "meson_options.txt",
-              "build.ninja"
-            )(fname)
-              or util.root_pattern("compile_commands.json", "compile_flags.txt")(fname)
-              or vim.fs.root(fname, ".git")
+              "build.ninja",
+              ".clangd",
+              ".git",
+            })
+            on_dir(root or vim.fs.dirname(fname))
           end,
           capabilities = { offsetEncoding = { "utf-16" } },
           cmd = {
@@ -165,10 +164,33 @@ return {
               completeUnimported = true,
               staticcheck = true,
               directoryFilters = { "-.git", "-.vscode", "-.idea", "-.vscode-test", "-node_modules" },
-              semanticTokens = true,
+              -- Disabled: Neovim 0.12's semantic-tokens handler crashes on the
+              -- token ranges gopls emits (semantic_tokens.lua:376 traceback on
+              -- every edit). Treesitter handles Go highlighting. Flip back to
+              -- true (and restore the force-enable in setup.gopls below) once
+              -- the upstream handler is fixed.
+              semanticTokens = false,
             },
           },
         },
+      },
+      setup = {
+        gopls = function(_, _)
+          -- Kill gopls semantic tokens client-side. Neovim 0.12's handler
+          -- (runtime/lua/vim/lsp/semantic_tokens.lua:376) throws while
+          -- processing gopls' range token responses, spamming a
+          -- "vim.schedule callback" error on every edit. Nil-ing the
+          -- provider on attach stops Neovim ever requesting them.
+          --
+          -- To re-enable later: set semanticTokens = true above and restore
+          -- the old force-enable block (git history) here. If you want to keep
+          -- semantic tokens but avoid the crash, try setting only `range =
+          -- false` on the provider instead of nil-ing it — the traceback is in
+          -- the textDocument/semanticTokens/range path specifically.
+          Snacks.util.lsp.on({ name = "gopls" }, function(_, client)
+            client.server_capabilities.semanticTokensProvider = nil
+          end)
+        end,
       },
     },
   },
@@ -324,6 +346,13 @@ return {
         "tsx",
         "jsdoc",
         "toml",
+        -- Fullstack-React web grammars (json/json5 also come via the lang.json
+        -- extra; listed here so they're guaranteed even if that extra changes).
+        "css",
+        "scss",
+        "html",
+        "json",
+        "json5",
       })
     end,
   },
@@ -352,6 +381,12 @@ return {
         "typescript-language-server",
         "prettier",
         "eslint-lsp",
+        -- Fullstack-React web tooling. tailwindcss-language-server and json-lsp
+        -- are installed by the lang.tailwind / lang.json extras; these three
+        -- complete the set: CSS, HTML, and Emmet expansion (jsx/tsx aware).
+        "css-lsp",
+        "html-lsp",
+        "emmet-language-server",
       },
     },
   },
@@ -377,18 +412,38 @@ return {
     },
   },
 
+  -- golings keeps reference solutions tagged `//go:build ignore`. golangci-lint
+  -- exits 7 ("build constraints exclude all Go files") when nvim-lint points it
+  -- at a directory of such files, surfacing a useless warning. Skip the linter
+  -- for any build-ignored Go buffer (LazyVim honours a per-linter `condition`).
   {
     "mfussenegger/nvim-lint",
     optional = true,
     opts = {
-      linters_by_ft = {
-        javascript = { "eslint" },
-        typescript = { "eslint" },
-        javascriptreact = { "eslint" },
-        typescriptreact = { "eslint" },
+      linters = {
+        golangcilint = {
+          condition = function()
+            for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, 15, false)) do
+              if line:match("^//go:build%s+ignore%s*$") or line:match("^//%s*%+build%s+ignore%s*$") then
+                return false -- build-ignored: golangci-lint can't typecheck it
+              end
+              if line:match("^package%s") then
+                break -- build tags must precede `package`; stop scanning
+              end
+            end
+            return true
+          end,
+        },
       },
     },
   },
+
+  -- NOTE: JS/TS/React ESLint is now handled by the
+  -- `lazyvim.plugins.extras.linting.eslint` extra (eslint-lsp) enabled in
+  -- lazyvim.json. It gives real LSP diagnostics + `EslintFixAll` on save and
+  -- understands flat config (eslint.config.js / .mjs). The old nvim-lint
+  -- CLI-based eslint entries were removed so diagnostics aren't reported twice.
+  -- Add non-eslint linters here if you ever need them.
 
   -- DAP (Debug Adapter Protocol) — codelldb covers C/C++ and Rust.
   {

@@ -287,3 +287,19 @@ When inside Oil buffer:
 ## Conflict-Free Guarantee
 
 All keybindings have been carefully checked for conflicts. Each key combination is assigned to only one action in its respective context (mode/filetype).
+
+## Quitting
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<C-q>` | Save all & quit | Writes every modified file-backed buffer, then force-quits Neovim — works from normal, insert, visual and terminal mode. No prompts. |
+| `<leader>qq` | Quit all | LazyVim default (prompts on unsaved changes) |
+
+## Assembly (x86-64 — ft=nasm for .asm/.nasm, ft=asm for .s/.S)
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>cr` | Assemble, link & run | `nasm -f elf64 … && ld && ./prog` (or `as`/`ld` for GAS files) in a split terminal |
+| `K` | Instruction docs | asm-lsp hover documents every instruction/register |
+
+asm-lsp global config: `~/.config/asm-lsp/.asm-lsp.toml` (NASM, x86-64); a project-local `.asm-lsp.toml` overrides it.

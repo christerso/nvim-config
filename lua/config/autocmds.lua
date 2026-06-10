@@ -42,3 +42,65 @@ vim.api.nvim_create_autocmd("BufWritePre", {
     end
   end,
 })
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- C/C++: zero-interaction compile_commands.json for clangd.
+-- clangd's full project index (references, jump into library/system headers,
+-- cross-TU completion) needs a compilation database. On opening a C/C++ file:
+--   1. root already has compile_commands.json → nothing to do.
+--   2. a build dir has one → symlink it into the root silently.
+--   3. CMake project with none anywhere → run `cmake -B build
+--      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` in the background, link the result
+--      and restart clangd so it picks the database up.
+-- Mirrors ~/.emacs.d/lisp/cpp-compdb.el — same behavior in both editors.
+-- ─────────────────────────────────────────────────────────────────────────
+local compdb_attempted = {}
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "c", "cpp" },
+  callback = function(ev)
+    local fname = vim.api.nvim_buf_get_name(ev.buf)
+    if fname == "" then return end
+    local root = vim.fs.root(fname, "CMakeLists.txt") or vim.fs.root(fname, ".git")
+    if not root or compdb_attempted[root] then return end
+    compdb_attempted[root] = true
+
+    local target = root .. "/compile_commands.json"
+    if vim.uv.fs_stat(target) then return end
+
+    local function link_and_restart(db)
+      vim.uv.fs_symlink(db, target)
+      vim.notify("clangd: linked compile_commands.json -> " .. db, vim.log.levels.INFO)
+      vim.schedule(function()
+        vim.cmd("LspRestart clangd")
+      end)
+    end
+
+    -- An existing database in a conventional build dir? Just link it.
+    for _, dir in ipairs({ "build", "build-debug", "build-release", "out", "cmake-build-debug", "cmake-build-release" }) do
+      local db = root .. "/" .. dir .. "/compile_commands.json"
+      if vim.uv.fs_stat(db) then
+        link_and_restart(db)
+        return
+      end
+    end
+
+    -- CMake project with no database: configure quietly in the background.
+    if not vim.uv.fs_stat(root .. "/CMakeLists.txt") or vim.fn.executable("cmake") ~= 1 then
+      return
+    end
+    vim.notify("clangd: generating compile_commands.json ...", vim.log.levels.INFO)
+    vim.system(
+      { "cmake", "-S", ".", "-B", "build", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" },
+      { cwd = root },
+      vim.schedule_wrap(function(out)
+        local db = root .. "/build/compile_commands.json"
+        if out.code == 0 and vim.uv.fs_stat(db) then
+          link_and_restart(db)
+        else
+          vim.notify("clangd: cmake configure failed:\n" .. (out.stderr or ""), vim.log.levels.WARN)
+        end
+      end)
+    )
+  end,
+})
