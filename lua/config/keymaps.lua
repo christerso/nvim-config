@@ -35,3 +35,56 @@ local function save_all_and_quit()
   vim.cmd("qa!")
 end
 vim.keymap.set({ "n", "i", "v", "t" }, "<C-q>", save_all_and_quit, { desc = "Save all and quit Neovim", silent = true })
+
+-- ──────────────────────────────────────────────────────────────────────────
+-- Neovide font controls. GUI only: in terminal nvim the terminal emulator
+-- owns the font, so none of this applies there.
+--   Ctrl+ScrollWheel   grow / shrink font size (browser-style zoom)
+--   Ctrl+= / Ctrl+-    same, from the keyboard
+--   Ctrl+0             reset to the default family/size from options.lua
+--   Ctrl+1 .. Ctrl+5   switch between five fonts (size preserved):
+--                      JetBrains Mono, Fira Code, Cascadia Code, Hack, Meslo
+-- ──────────────────────────────────────────────────────────────────────────
+if vim.g.neovide then
+  -- guifont is always "Family:hN"; parse it, mutate, write back.
+  local function current_font()
+    local family, size = vim.o.guifont:match("^(.*):h(%d+)$")
+    return family or vim.g.font_default_family, tonumber(size) or vim.g.font_default_size
+  end
+
+  local function set_font(family, size)
+    size = math.max(6, math.min(40, size))
+    vim.o.guifont = family .. ":h" .. size
+    vim.notify(family .. " " .. size, vim.log.levels.INFO, { title = "Font" })
+  end
+
+  local function bump_size(delta)
+    local family, size = current_font()
+    set_font(family, size + delta)
+  end
+
+  local modes = { "n", "i", "v", "t" }
+
+  vim.keymap.set(modes, "<C-ScrollWheelUp>", function() bump_size(1) end, { desc = "Font size +1", silent = true })
+  vim.keymap.set(modes, "<C-ScrollWheelDown>", function() bump_size(-1) end, { desc = "Font size -1", silent = true })
+  vim.keymap.set(modes, "<C-=>", function() bump_size(1) end, { desc = "Font size +1", silent = true })
+  vim.keymap.set(modes, "<C-->", function() bump_size(-1) end, { desc = "Font size -1", silent = true })
+  vim.keymap.set(modes, "<C-0>", function()
+    set_font(vim.g.font_default_family, vim.g.font_default_size)
+  end, { desc = "Font reset", silent = true })
+
+  -- All Nerd Font Mono variants so LazyVim's icons keep rendering.
+  local families = {
+    "JetBrainsMono Nerd Font Mono", -- JetBrains Mono
+    "FiraCode Nerd Font Mono", -- Fira Code
+    "CaskaydiaCove Nerd Font Mono", -- Cascadia Code
+    "Hack Nerd Font Mono", -- Hack
+    "MesloLGL Nerd Font Mono", -- Meslo (the long-time default here)
+  }
+  for i, family in ipairs(families) do
+    vim.keymap.set(modes, "<C-" .. i .. ">", function()
+      local _, size = current_font()
+      set_font(family, size)
+    end, { desc = "Font: " .. family, silent = true })
+  end
+end

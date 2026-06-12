@@ -16,11 +16,18 @@ vim.opt.list = false
 vim.opt.scrolloff = 999
 
 -- Neovide font configuration
+-- Default family/size live in globals so the font keymaps (Ctrl+1..5, Ctrl+
+-- scroll, Ctrl+0 reset — see config/keymaps.lua) can read and reset them.
+vim.g.font_default_family = "MesloLGL Nerd Font Mono"
+vim.g.font_default_size = 14
 if vim.g.neovide then
-  vim.o.guifont = "MesloLGL Nerd Font Mono:h12"
-  vim.g.neovide_cursor_vfx_mode = "pixiedust"
-  vim.g.neovide_cursor_vfx_particle_density = 20.0
-  vim.g.neovide_cursor_vfx_particle_lifetime = 1.5
+  vim.o.guifont = vim.g.font_default_family .. ":h" .. vim.g.font_default_size
+  -- Behave like a plain terminal nvim: no cursor trail, no animations.
+  vim.g.neovide_cursor_vfx_mode = "" -- no particle trail (was "pixiedust")
+  vim.g.neovide_cursor_animation_length = 0 -- cursor jumps instantly, no smear
+  vim.g.neovide_cursor_trail_size = 0
+  vim.g.neovide_scroll_animation_length = 0 -- no smooth scroll
+  vim.g.neovide_position_animation_length = 0 -- no window/split slide
 end
 
 -- x86-64 assembly: default .asm files to NASM (Intel syntax). The builtin

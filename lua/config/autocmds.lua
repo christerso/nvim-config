@@ -7,6 +7,10 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
+-- NOTE: session auto-restore lives in lua/plugins/persistence.lua, NOT here:
+-- this file is loaded on the VeryLazy event, which fires AFTER VimEnter, so a
+-- VimEnter autocmd registered here would never run.
+
 -- Go: Use tabs (Go standard) with 4-space display width
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "go",
