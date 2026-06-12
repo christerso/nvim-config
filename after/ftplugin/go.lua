@@ -12,16 +12,16 @@ local term_win = {
   wo = { winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder" },
 }
 
-map("<leader>rr", function()
+local function run_file()
   vim.cmd("write")
   local file = vim.fn.expand("%:p")
   Snacks.terminal("go run " .. vim.fn.shellescape(file), {
     auto_close = false,
     win = term_win,
   })
-end, "Run current Go file")
+end
 
-map("<leader>rR", function()
+local function run_package()
   vim.cmd("write")
   local dir = vim.fn.expand("%:p:h")
   Snacks.terminal("go run .", {
@@ -29,4 +29,14 @@ map("<leader>rR", function()
     auto_close = false,
     win = term_win,
   })
-end, "Run current Go package")
+end
+
+map("<leader>rr", run_file, "Run current Go file")
+map("<leader>rR", run_package, "Run current Go package")
+
+-- Ctrl+Return launches the current Go file from normal and insert mode.
+-- Works in Neovide (native modifier encoding) and CLI nvim on terminals that
+-- support the kitty keyboard protocol (Alacritty >= 0.13, kitty); a plain
+-- xterm can't distinguish Ctrl+Return from Return, so it silently no-ops there.
+map("<C-CR>", run_file, "Run current Go file", "n")
+map("<C-CR>", run_file, "Run current Go file", "i")

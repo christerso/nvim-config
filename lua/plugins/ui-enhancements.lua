@@ -292,22 +292,15 @@ return {
   },
 
   -- Disable snacks.nvim indent module (no guides, no scope lines).
-  -- Also disable the snacks file explorer: this setup uses oil.nvim (default
-  -- file explorer) + Telescope (fuzzy finder). LazyVim's auto-loaded
-  -- `snacks_explorer` extra bound <leader>e/<leader>fe to Snacks.explorer(),
-  -- which intermittently threw `nvim_exec2(): ...` errors when opening a buffer.
-  -- Turn it off and route those keys to oil so the muscle-memory keys still work.
+  -- Also disable the snacks file explorer: it intermittently threw
+  -- `nvim_exec2(): ...` errors when opening a buffer. <leader>e is the
+  -- neo-tree sidebar (lazyvim.plugins.extras.editor.neo-tree); oil.nvim
+  -- stays on `-` for in-buffer filesystem edits.
   {
     "folke/snacks.nvim",
     opts = {
       indent = { enabled = false },
       explorer = { enabled = false },
-    },
-    keys = {
-      { "<leader>e", "<cmd>Oil<cr>", desc = "Explorer (Oil)" },
-      { "<leader>E", "<cmd>Oil<cr>", desc = "Explorer (Oil)" },
-      { "<leader>fe", "<cmd>Oil<cr>", desc = "Explorer (Oil)" },
-      { "<leader>fE", "<cmd>Oil<cr>", desc = "Explorer (Oil)" },
     },
   },
 

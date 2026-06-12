@@ -138,6 +138,18 @@ These work in C/C++, Go, Rust, JavaScript, TypeScript files:
 | `-` | Open Oil file explorer (parent directory) |
 | `<leader>-` | Open Oil in floating window |
 
+### Neo-tree (Sidebar File Explorer)
+| Key | Action |
+|-----|--------|
+| `<leader>e` | Toggle Neo-tree sidebar (root dir) |
+| `<leader>E` | Toggle Neo-tree sidebar (cwd) |
+| `<leader>fe` | Toggle Neo-tree sidebar (root dir) |
+| `<leader>fE` | Toggle Neo-tree sidebar (cwd) |
+| `<leader>ge` | Git status explorer |
+| `<leader>be` | Buffer explorer |
+
+Inside Neo-tree: `l`/`<CR>` open, `h` close node, `a` add, `d` delete, `r` rename, `Y` copy path, `P` toggle preview, `?` help.
+
 ### Search
 | Key | Action |
 |-----|--------|
@@ -303,3 +315,27 @@ All keybindings have been carefully checked for conflicts. Each key combination 
 | `K` | Instruction docs | asm-lsp hover documents every instruction/register |
 
 asm-lsp global config: `~/.config/asm-lsp/.asm-lsp.toml` (NASM, x86-64); a project-local `.asm-lsp.toml` overrides it.
+
+### Font Controls (Neovide only)
+| Key | Action |
+|-----|--------|
+| `Ctrl+ScrollWheel` | Font size up / down |
+| `Ctrl+=` / `Ctrl+-` | Font size up / down (keyboard) |
+| `Ctrl+0` | Reset to default font and size |
+| `Ctrl+1` … `Ctrl+5` | Switch font: JetBrains Mono / Fira Code / Cascadia Code / Hack / Meslo |
+
+### Themes (nacre.nvim — voidlight stays the default)
+| Key | Action |
+|-----|--------|
+| `Ctrl+8` / `Ctrl+9` | Previous / next nacre theme |
+| `:NacrePick` | Pick a nacre theme from a list |
+| `:NacreOff` | Back to voidlight |
+
+### Sessions
+Starting `nvim` or Neovide with no file arguments restores the last session
+for that directory — buffers, splits, cursor position. `nvim somefile` still
+opens just that file. See `lua/plugins/persistence.lua`.
+
+### Wall Cheat Sheet
+`cheatsheet/nvim-cheatsheet.pdf` — A4 landscape, black & white, built from
+`nvim-cheatsheet.tex` with `lualatex` (TeX Live 2025).
