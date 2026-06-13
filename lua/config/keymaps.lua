@@ -36,6 +36,18 @@ local function save_all_and_quit()
 end
 vim.keymap.set({ "n", "i", "v", "t" }, "<C-q>", save_all_and_quit, { desc = "Save all and quit Neovim", silent = true })
 
+-- <leader>ct: pick a filetype by hand (fuzzy-selectable). Handy after pasting
+-- code into a scratch buffer when content auto-detect can't decide or guessed
+-- wrong. Setting the filetype fires FileType, which starts Treesitter / syntax.
+vim.keymap.set("n", "<leader>ct", function()
+  local fts = vim.fn.getcompletion("", "filetype")
+  vim.ui.select(fts, { prompt = "Set filetype:" }, function(choice)
+    if choice and choice ~= "" then
+      vim.bo.filetype = choice
+    end
+  end)
+end, { desc = "Set filetype (pick)" })
+
 -- ──────────────────────────────────────────────────────────────────────────
 -- Neovide font controls. GUI only: in terminal nvim the terminal emulator
 -- owns the font, so none of this applies there.
