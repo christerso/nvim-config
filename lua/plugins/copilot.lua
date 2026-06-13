@@ -28,7 +28,10 @@ return {
           hide_during_completion = true,
           debounce = 75,
           keymap = {
-            accept = "<Tab>",
+            -- accept is handled by blink.cmp's <Tab> via the ai_accept action
+            -- below — NOT here. A copilot accept mapping is global and would
+            -- lose to blink's buffer-local <Tab> anyway, so we disable it.
+            accept = false,
             accept_word = false,
             accept_line = false,
             next = "<M-]>",
@@ -50,6 +53,22 @@ return {
         copilot_node_command = "node", -- Node.js version must be > 18.x
         server_opts_overrides = {},
       })
+
+      -- Bridge copilot's inline ghost text to blink.cmp's <Tab>.
+      -- LazyVim's blink <Tab> falls through snippet_forward -> ai_nes ->
+      -- ai_accept -> literal tab. ai_accept is nil unless registered here
+      -- (normally the LazyVim copilot *extra* does it; this config is
+      -- hand-rolled, so we register it ourselves). With this set, pressing
+      -- <Tab> while a copilot suggestion is visible accepts it; otherwise
+      -- <Tab> behaves normally.
+      LazyVim.cmp.actions.ai_accept = function()
+        local suggestion = require("copilot.suggestion")
+        if suggestion.is_visible() then
+          LazyVim.create_undo() -- so a single <u> undoes the whole accept
+          suggestion.accept()
+          return true
+        end
+      end
     end,
   },
 
@@ -90,34 +109,8 @@ return {
     },
   },
 
-  -- Integrate Copilot with cmp for better completion
-  {
-    "hrsh7th/nvim-cmp",
-    dependencies = {
-      {
-        "zbirenbaum/copilot-cmp",
-        dependencies = "copilot.lua",
-        opts = {},
-        config = function(_, opts)
-          local copilot_cmp = require("copilot_cmp")
-          copilot_cmp.setup(opts)
-          -- Attach cmp source whenever copilot attaches
-          -- Fixes lazy-loading issues with the copilot cmp source
-          require("lazyvim.util").lsp.on_attach(function(client)
-            if client.name == "copilot" then
-              copilot_cmp._on_insert_enter({})
-            end
-          end)
-        end,
-      },
-    },
-    ---@param opts cmp.ConfigSchema
-    opts = function(_, opts)
-      table.insert(opts.sources, 1, {
-        name = "copilot",
-        group_index = 1,
-        priority = 100,
-      })
-    end,
-  },
+  -- NOTE: there is intentionally no nvim-cmp / copilot-cmp integration here.
+  -- This config uses blink.cmp (the LazyVim default); nvim-cmp is disabled and
+  -- never loads, so a copilot-cmp source would be dead code. Copilot appears as
+  -- inline ghost text, accepted via <Tab> through the ai_accept bridge above.
 }
